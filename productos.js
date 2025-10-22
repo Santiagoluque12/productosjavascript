@@ -18,13 +18,15 @@ const combos = [
 ];
 
 const Productos = [...maquinas, ...combos, ...afeitadoras];
-const Carrito = [];
+let Carrito = [];
 
 let botonesAgregar = document.querySelectorAll(".boton");
 const listaProductos = document.querySelector("#lista");
 const contenidoCarrito = document.querySelector("#carrito-container");
 const subtotal = document.querySelector(".total");
 const comprar = document.querySelector(".comprar");
+const comprarealizada = document.querySelector(".comprarealizada");
+const eliminarhistorial = document.querySelector(".eliminarcompra");
 
 
 function cargarProductos() {
@@ -102,13 +104,54 @@ function eliminarBoton(e) {
 
 function finalizarCompra() {
     const total = calcularTotal()
-    renderizarCarrito();
-    if (Carrito.length === 0) { alert("No tiene productos seleccionados") }
-    else {
-        alert(`Muchas gracias por su compra! Su compra es de $${total}`);
+
+    if (Carrito.length === 0) {
+        Swal.fire({
+            icon: "error",
+            title: "No tiene productos seleccionados",
+            text: "Seleccione un producto para realizar una compra!",
+        });
     }
+    else {
+        localStorage.setItem("productosComprados", JSON.stringify(Carrito));
+        Swal.fire({
+            title: `Muchas gracias por su compra! Su compra es de $${total}`,
+            icon: "success",
+            draggable: true
+        });
+        Carrito = [];
+        renderizarCarrito();
+    }
+
 }
 
 comprar.addEventListener("click", finalizarCompra);
+comprar.addEventListener("click", () => {
+    const productosCompradosJSON = localStorage.getItem("productosComprados");
+    let historial = [];
+    let totalcompra = 0;
+
+    if (productosCompradosJSON) {
+        historial = JSON.parse(productosCompradosJSON);
+        totalcompra = historial.reduce((total, producto) => total + (producto.precio * producto.cantidad), 0);
+    }
+
+    if (historial.length === 0) {
+        comprarealizada.innerHTML = `<h1>Historial de compra: No tiene productos comprados</h1>`;
+    } else {
+        let detalleHtml = `<h1>Historial de compra: Total de $${totalcompra}</h1>`;
+        detalleHtml += `<h2>Productos comprados:</h2><ul>`;
+        historial.forEach(producto => {
+            detalleHtml += `<li>${producto.nombre} - Cantidad: ${producto.cantidad}</li>`;
+        });
+        detalleHtml += `</ul>`;
+        comprarealizada.innerHTML = detalleHtml;
+    }
+});
+
+eliminarhistorial.addEventListener("click", () => {
+    localStorage.removeItem("productosComprados");
+    comprarealizada.innerHTML = `<h1> Historial de compra vacío </h1>`;
+});
 
 renderizarCarrito();
