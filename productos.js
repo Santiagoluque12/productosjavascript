@@ -1,24 +1,6 @@
-const maquinas = [
-    { id: "1", nombre: "Wahl Home Cut & Detail", precio: 52900, disponibilidad: true, descuento: 10, stock: 26 },
-    { id: "2", nombre: "clipper NG-411 WMARK", precio: 106990, disponibilidad: true, descuento: 25, stock: 21 },
-    { id: "3", nombre: "Kemei Recargable", precio: 56600, disponibilidad: true, descuento: 5, stock: 42 },
-    { id: "4", nombre: "VGR V-001 9000 RPM Rojo", precio: 63329, disponibilidad: true, descuento: false, stock: 22 },
-];
-const afeitadoras = [
-    { id: "5", nombre: "Shaver Care By Gadnic Recargable Usb", precio: 62100, disponibilidad: true, descuento: 20, stock: 20 },
-    { id: "6", nombre: "Babyliss Foilfx02 Afeitadora Doble Hoja", precio: 119990, disponibilidad: true, descuento: false, stock: 40 },
-    { id: "7", nombre: "Shaver Vgr V-323", precio: 57588, disponibilidad: true, descuento: 20, stock: 15 },
-    { id: "8", nombre: "BabylissPRO Profesional Foil FX01 Black", precio: 53743, disponibilidad: true, descuento: false, stock: 30 },
-];
-const combos = [
-    { id: "9", nombre: "Combo Maquina Homecut 8 Piezas + Kit Tijeras y Navajin", precio: 129266, disponibilidad: true, descuento: 10, stock: 12 },
-    { id: "10", nombre: "Tijeras Barbero Cabello Estilista Inoxidable Portátil Kit", precio: 46490, disponibilidad: true, descuento: false, stock: 25 },
-    { id: "11", nombre: "Combo Peluqueria Barberia Tijeras + Navaja + Capa Corte", precio: 48591, disponibilidad: true, descuento: false, stock: 10 },
-    { id: "12", nombre: "Kit Peluqueria Profesional Tijeras, Secador, Planchita", precio: 765589, disponibilidad: true, descuento: 15, stock: 5 },
-];
-
-const Productos = [...maquinas, ...combos, ...afeitadoras];
+const url = 'https://dummyjson.com/products'
 let Carrito = [];
+let Productos = [];
 
 let botonesAgregar = document.querySelectorAll(".boton");
 const listaProductos = document.querySelector("#lista");
@@ -30,16 +12,27 @@ const eliminarhistorial = document.querySelector(".eliminarcompra");
 
 
 function cargarProductos() {
-    Productos.forEach((Producto) => {
-        const divProductos = document.createElement("div");
-        divProductos.innerHTML = `
-        <h2>${Producto.nombre}</h2>
-        <h3>Precio: $${Producto.precio}</h3>
-        <p>(Stock: ${Producto.stock})</p>
-        <button class="boton" id="${Producto.id}">Agregar al carrito</button>`;
-        listaProductos.appendChild(divProductos);
-    });
-    actualizarBoton();
+    fetch(url)
+        .then(response => response.json())
+        .then(data => {
+            Productos = data.products;
+
+            Productos.forEach(products => {
+                const divProductos = document.createElement("div");
+                divProductos.innerHTML = `
+            <h1>${products.title}</h1>
+            <img src="${products.thumbnail}"/>
+            <h2>${products.description}</h2>
+            <h3>Precio: $${products.price}</h3>
+            <p>(Stock: ${products.stock})</p>
+            <button class="boton" id="${products.id}">Agregar al carrito</button>`;
+                listaProductos.appendChild(divProductos);
+            });
+            actualizarBoton();
+        })
+        .catch(error => {
+            console.error('Hubo un problema:', error);
+        });
 }
 cargarProductos();
 
@@ -51,7 +44,7 @@ function actualizarBoton() {
 }
 
 function calcularTotal() {
-    return Carrito.reduce((total, producto) => total + (producto.precio * producto.cantidad), 0);
+    return Carrito.reduce((total, producto) => total + (producto.price * producto.cantidad), 0);
 }
 
 function renderizarCarrito() {
@@ -59,8 +52,9 @@ function renderizarCarrito() {
     Carrito.forEach(Producto => {
         const div = document.createElement("div");
         div.innerHTML = `
-            <h2>${Producto.nombre}</h2>
-            <h3>Precio: $${Producto.precio}</h3>
+            <h2>${Producto.title}</h2>
+            <img src="${Producto.thumbnail}"/>
+            <h3>Precio: $${Producto.price}</h3>
             <p>Cantidad: ${Producto.cantidad}</p>
             <button class="botonEliminar" id="${Producto.id}">Eliminar</button>
         `;
@@ -71,7 +65,7 @@ function renderizarCarrito() {
 }
 
 function agregarAcarrito(e) {
-    const botonid = e.currentTarget.id;
+    const botonid = parseInt(e.currentTarget.id);
     const productoAgregado = Productos.find(
         (Producto) => Producto.id === botonid
     );
@@ -80,8 +74,10 @@ function agregarAcarrito(e) {
         const index = Carrito.findIndex((Producto) => Producto.id === botonid);
         Carrito[index].cantidad++;
     } else {
-        productoAgregado.cantidad = 1;
-        Carrito.push(productoAgregado);
+        if (productoAgregado) {
+            productoAgregado.cantidad = 1;
+            Carrito.push({ ...productoAgregado });
+        }
     }
     renderizarCarrito();
 }
@@ -94,7 +90,7 @@ function actualizarBotonEliminar() {
 }
 
 function eliminarBoton(e) {
-    const botonid = e.currentTarget.id;
+    const botonid = parseInt(e.currentTarget.id);
     const index = Carrito.findIndex((Producto) => Producto.id === botonid);
     if (index !== -1) {
         Carrito.splice(index, 1);
@@ -133,7 +129,7 @@ comprar.addEventListener("click", () => {
 
     if (productosCompradosJSON) {
         historial = JSON.parse(productosCompradosJSON);
-        totalcompra = historial.reduce((total, producto) => total + (producto.precio * producto.cantidad), 0);
+        totalcompra = historial.reduce((total, producto) => total + (producto.price * producto.cantidad), 0);
     }
 
     if (historial.length === 0) {
@@ -142,7 +138,7 @@ comprar.addEventListener("click", () => {
         let detalleHtml = `<h1>Historial de compra: Total de $${totalcompra}</h1>`;
         detalleHtml += `<h2>Productos comprados:</h2><ul>`;
         historial.forEach(producto => {
-            detalleHtml += `<li>${producto.nombre} - Cantidad: ${producto.cantidad}</li>`;
+            detalleHtml += `<li>${producto.title} - Cantidad: ${producto.cantidad}</li>`;
         });
         detalleHtml += `</ul>`;
         comprarealizada.innerHTML = detalleHtml;
